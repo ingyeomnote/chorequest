@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/providers/household_provider.dart';
 import 'package:flutter_app/providers/chore_provider.dart';
+import 'package:flutter_app/screens/profile/settings_screen.dart';
+import 'package:flutter_app/screens/profile/help_screen.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -150,7 +152,11 @@ class ProfileTab extends StatelessWidget {
               title: const Text('설정'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                // TODO: Navigate to settings
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -158,7 +164,11 @@ class ProfileTab extends StatelessWidget {
               title: const Text('도움말'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                // TODO: Navigate to help
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const HelpScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
