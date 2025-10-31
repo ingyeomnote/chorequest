@@ -31,9 +31,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final householdProvider = context.read<HouseholdProvider>();
     final choreProvider = context.read<ChoreProvider>();
 
-    if (authProvider.currentUser?.householdId != null) {
-      await householdProvider.loadHousehold(authProvider.currentUser!.householdId!);
-      await choreProvider.loadChores(authProvider.currentUser!.householdId!);
+    // 최신 사용자 정보 새로고침
+    authProvider.refreshCurrentUser();
+
+    final householdId = authProvider.currentUser?.householdId;
+    if (householdId != null && householdId.isNotEmpty) {
+      try {
+        await householdProvider.loadHousehold(householdId);
+        await choreProvider.loadChores(householdId);
+      } catch (e) {
+        debugPrint('데이터 로드 실패: $e');
+      }
     }
 
     setState(() => _isLoading = false);

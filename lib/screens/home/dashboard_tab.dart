@@ -25,6 +25,27 @@ class _DashboardTabState extends State<DashboardTab> {
     final choreProvider = context.watch<ChoreProvider>();
     final user = authProvider.currentUser!;
 
+    // 집안일 데이터를 로딩 중인 경우 로딩 화면 표시
+    if (choreProvider.isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('대시보드'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                choreProvider.refresh(user.householdId!);
+                authProvider.refreshCurrentUser();
+              },
+            ),
+          ],
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     final selectedDayChores = choreProvider.getChoresForDate(_selectedDay);
     final todayChores = choreProvider.getTodayChores();
 

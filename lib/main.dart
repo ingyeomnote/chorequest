@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_app/services/database_service.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/providers/household_provider.dart';
@@ -10,10 +11,13 @@ import 'package:flutter_app/screens/home/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize database
   await DatabaseService().initialize();
-  
+
+  // Initialize locale data for date formatting
+  await initializeDateFormatting('ko_KR', null);
+
   runApp(const MyApp());
 }
 

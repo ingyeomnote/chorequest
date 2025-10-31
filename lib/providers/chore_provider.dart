@@ -9,9 +9,11 @@ class ChoreProvider extends ChangeNotifier {
 
   List<ChoreModel> _chores = [];
   DateTime _selectedDate = DateTime.now();
+  bool _isLoading = false;
 
   List<ChoreModel> get chores => _chores;
   DateTime get selectedDate => _selectedDate;
+  bool get isLoading => _isLoading;
 
   // 날짜별 집안일 가져오기
   List<ChoreModel> getChoresForDate(DateTime date) {
@@ -30,9 +32,16 @@ class ChoreProvider extends ChangeNotifier {
 
   // 가구의 모든 집안일 로드
   Future<void> loadChores(String householdId) async {
-    _chores = _db.getChoresByHousehold(householdId);
-    _sortChores();
+    _isLoading = true;
     notifyListeners();
+
+    try {
+      _chores = _db.getChoresByHousehold(householdId);
+      _sortChores();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // 사용자별 집안일 로드
