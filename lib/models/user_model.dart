@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:hive/hive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'user_model.g.dart';
 
@@ -32,6 +33,22 @@ class UserModel extends HiveObject {
   @HiveField(8)
   DateTime updatedAt;
 
+  // Phase 2 추가 필드
+  @HiveField(9)
+  List<String> achievements;
+
+  @HiveField(10)
+  int currentStreak;
+
+  @HiveField(11)
+  int longestStreak;
+
+  @HiveField(12)
+  DateTime? lastLoginAt;
+
+  @HiveField(13)
+  DateTime? lastActivityAt;
+
   UserModel({
     required this.id,
     required this.name,
@@ -40,6 +57,11 @@ class UserModel extends HiveObject {
     this.householdId,
     this.xp = 0,
     this.level = 1,
+    this.achievements = const [],
+    this.currentStreak = 0,
+    this.longestStreak = 0,
+    this.lastLoginAt,
+    this.lastActivityAt,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
@@ -105,6 +127,7 @@ class UserModel extends HiveObject {
     );
   }
 
+  // Hive용 직렬화 (기존 호환성 유지)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -114,6 +137,11 @@ class UserModel extends HiveObject {
       'householdId': householdId,
       'xp': xp,
       'level': level,
+      'achievements': achievements,
+      'currentStreak': currentStreak,
+      'longestStreak': longestStreak,
+      'lastLoginAt': lastLoginAt?.toIso8601String(),
+      'lastActivityAt': lastActivityAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -128,8 +156,84 @@ class UserModel extends HiveObject {
       householdId: map['householdId'] as String?,
       xp: map['xp'] as int? ?? 0,
       level: map['level'] as int? ?? 1,
+      achievements: (map['achievements'] as List<dynamic>?)?.cast<String>() ?? [],
+      currentStreak: map['currentStreak'] as int? ?? 0,
+      longestStreak: map['longestStreak'] as int? ?? 0,
+      lastLoginAt: map['lastLoginAt'] != null
+          ? DateTime.parse(map['lastLoginAt'] as String)
+          : null,
+      lastActivityAt: map['lastActivityAt'] != null
+          ? DateTime.parse(map['lastActivityAt'] as String)
+          : null,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
+    );
+  }
+
+  // Firestore용 직렬화 (Timestamp 사용)
+  Map<String, dynamic> toFirestore() {
+    return {
+      'name': name,
+      'email': email,
+      'avatarUrl': avatarUrl,
+      'householdId': householdId,
+      'xp': xp,
+      'level': level,
+      'achievements': achievements,
+      'currentStreak': currentStreak,
+      'longestStreak': longestStreak,
+      'lastLoginAt': lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
+      'lastActivityAt': lastActivityAt != null ? Timestamp.fromDate(lastActivityAt!) : null,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+    };
+  }
+
+  factory UserModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
+    return UserModel(
+      id: doc.id, // Firestore document ID
+      name: data['name'] as String,
+      email: data['email'] as String,
+      avatarUrl: data['avatarUrl'] as String?,
+      householdId: data['householdId'] as String?,
+      xp: data['xp'] as int? ?? 0,
+      level: data['level'] as int? ?? 1,
+      achievements: (data['achievements'] as List<dynamic>?)?.cast<String>() ?? [],
+      currentStreak: data['currentStreak'] as int? ?? 0,
+      longestStreak: data['longestStreak'] as int? ?? 0,
+      lastLoginAt: data['lastLoginAt'] != null
+          ? (data['lastLoginAt'] as Timestamp).toDate()
+          : null,
+      lastActivityAt: data['lastActivityAt'] != null
+          ? (data['lastActivityAt'] as Timestamp).toDate()
+          : null,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+    );
+  }
+
+  // fromFirestore 대안 (Map에서 직접 생성)
+  factory UserModel.fromFirestoreMap(String id, Map<String, dynamic> data) {
+    return UserModel(
+      id: id,
+      name: data['name'] as String,
+      email: data['email'] as String,
+      avatarUrl: data['avatarUrl'] as String?,
+      householdId: data['householdId'] as String?,
+      xp: data['xp'] as int? ?? 0,
+      level: data['level'] as int? ?? 1,
+      achievements: (data['achievements'] as List<dynamic>?)?.cast<String>() ?? [],
+      currentStreak: data['currentStreak'] as int? ?? 0,
+      longestStreak: data['longestStreak'] as int? ?? 0,
+      lastLoginAt: data['lastLoginAt'] != null
+          ? (data['lastLoginAt'] as Timestamp).toDate()
+          : null,
+      lastActivityAt: data['lastActivityAt'] != null
+          ? (data['lastActivityAt'] as Timestamp).toDate()
+          : null,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
   }
 }

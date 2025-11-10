@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'chore_model.g.dart';
 
@@ -141,6 +142,7 @@ class ChoreModel extends HiveObject {
     );
   }
 
+  // Hive용 직렬화 (기존 호환성 유지)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -184,6 +186,81 @@ class ChoreModel extends HiveObject {
       recurringPattern: map['recurringPattern'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
+    );
+  }
+
+  // Firestore용 직렬화 (Timestamp 사용, enum은 문자열로 저장)
+  Map<String, dynamic> toFirestore() {
+    return {
+      'title': title,
+      'description': description,
+      'householdId': householdId,
+      'assignedUserId': assignedUserId,
+      'difficulty': difficulty.name, // 'easy', 'medium', 'hard'
+      'status': status.name, // 'pending', 'completed', 'overdue'
+      'dueDate': Timestamp.fromDate(dueDate),
+      'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
+      'completedByUserId': completedByUserId,
+      'isRecurring': isRecurring,
+      'recurringPattern': recurringPattern,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+    };
+  }
+
+  factory ChoreModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
+    return ChoreModel(
+      id: doc.id, // Firestore document ID
+      title: data['title'] as String,
+      description: data['description'] as String?,
+      householdId: data['householdId'] as String,
+      assignedUserId: data['assignedUserId'] as String?,
+      difficulty: ChoreDifficulty.values.firstWhere(
+        (e) => e.name == data['difficulty'],
+        orElse: () => ChoreDifficulty.medium,
+      ),
+      status: ChoreStatus.values.firstWhere(
+        (e) => e.name == data['status'],
+        orElse: () => ChoreStatus.pending,
+      ),
+      dueDate: (data['dueDate'] as Timestamp).toDate(),
+      completedAt: data['completedAt'] != null
+          ? (data['completedAt'] as Timestamp).toDate()
+          : null,
+      completedByUserId: data['completedByUserId'] as String?,
+      isRecurring: data['isRecurring'] as bool? ?? false,
+      recurringPattern: data['recurringPattern'] as String?,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+    );
+  }
+
+  // fromFirestore 대안 (Map에서 직접 생성)
+  factory ChoreModel.fromFirestoreMap(String id, Map<String, dynamic> data) {
+    return ChoreModel(
+      id: id,
+      title: data['title'] as String,
+      description: data['description'] as String?,
+      householdId: data['householdId'] as String,
+      assignedUserId: data['assignedUserId'] as String?,
+      difficulty: ChoreDifficulty.values.firstWhere(
+        (e) => e.name == data['difficulty'],
+        orElse: () => ChoreDifficulty.medium,
+      ),
+      status: ChoreStatus.values.firstWhere(
+        (e) => e.name == data['status'],
+        orElse: () => ChoreStatus.pending,
+      ),
+      dueDate: (data['dueDate'] as Timestamp).toDate(),
+      completedAt: data['completedAt'] != null
+          ? (data['completedAt'] as Timestamp).toDate()
+          : null,
+      completedByUserId: data['completedByUserId'] as String?,
+      isRecurring: data['isRecurring'] as bool? ?? false,
+      recurringPattern: data['recurringPattern'] as String?,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
   }
 }
