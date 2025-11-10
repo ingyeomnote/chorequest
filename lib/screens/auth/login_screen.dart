@@ -13,11 +13,13 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -28,21 +30,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final authProvider = context.read<AuthProvider>();
-      final user = await authProvider.login(_emailController.text.trim());
+      await authProvider.signInWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
       if (!mounted) return;
 
-      if (user != null) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('사용자를 찾을 수 없습니다. 회원가입을 진행해주세요.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      Navigator.of(context).pushReplacementNamed('/home');
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('로그인 실패: $e')),
       );
@@ -102,6 +99,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       }
                       if (!value.contains('@')) {
                         return '올바른 이메일 형식이 아닙니다';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                      labelText: '비밀번호',
+                      hintText: '비밀번호를 입력하세요',
+                      prefixIcon: Icon(Icons.lock),
+                      border: OutlineInputBorder(),
+                    ),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '비밀번호를 입력해주세요';
+                      }
+                      if (value.length < 6) {
+                        return '비밀번호는 최소 6자 이상이어야 합니다';
                       }
                       return null;
                     },

@@ -7,7 +7,7 @@ library;
 enum Environment { development, staging, production }
 
 class EnvironmentConfig {
-  static Environment _current = Environment.development;
+  static Environment _current = Environment.production;
 
   /// Current environment
   static Environment get current => _current;

@@ -31,7 +31,8 @@ class _ChoresTabState extends State<ChoresTab> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final choreProvider = context.watch<ChoreProvider>();
-    final user = authProvider.currentUser!;
+    // Remove unused variable
+    // final user = authProvider.currentUser!;
 
     // 집안일 데이터를 로딩 중인 경우 로딩 화면 표시
     if (choreProvider.isLoading) {

@@ -13,12 +13,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -29,15 +31,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final authProvider = context.read<AuthProvider>();
-      await authProvider.register(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
+      await authProvider.signUpWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        name: _nameController.text.trim(),
       );
 
       if (!mounted) return;
 
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('회원가입 실패: $e')),
       );
@@ -99,6 +103,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     }
                     if (!value.contains('@')) {
                       return '올바른 이메일 형식이 아닙니다';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(
+                    labelText: '비밀번호',
+                    hintText: '최소 6자 이상',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '비밀번호를 입력해주세요';
+                    }
+                    if (value.length < 6) {
+                      return '비밀번호는 최소 6자 이상이어야 합니다';
                     }
                     return null;
                   },
