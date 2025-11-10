@@ -1,14 +1,21 @@
-# ChoreQuest - 가족 협력형 집안일 관리 앱
+# ChoreQuest (홈챌린저) - 가족 협력형 집안일 관리 앱
 
 <div align="center">
   <img src="https://img.shields.io/badge/Flutter-3.35.4-blue?logo=flutter" alt="Flutter">
   <img src="https://img.shields.io/badge/Dart-3.9.2-blue?logo=dart" alt="Dart">
   <img src="https://img.shields.io/badge/Status-MVP-green" alt="Status">
+  <img src="https://img.shields.io/badge/Phase-1--Complete-success" alt="Phase">
 </div>
 
 ## 📋 프로젝트 개요
 
-**ChoreQuest**는 Habitica의 RPG 게임화 메커니즘과 TimeTree의 소셜 공유 기능을 결합한 가족 협력형 집안일 관리 앱입니다. 집안일을 재미있는 퀘스트처럼 만들어 가족 구성원들이 즐겁게 참여할 수 있도록 설계되었습니다.
+**ChoreQuest (한국명: 홈챌린저)**는 가사 노동의 정신적 부담을 줄이고 가족 간 공정한 분담을 지원하는 협업 앱입니다. Habitica의 RPG 게임화 메커니즘과 TimeTree의 소셜 공유 기능을 결합하여, 집안일을 재미있는 퀘스트로 만들어 가족 구성원들이 즐겁게 참여할 수 있도록 설계되었습니다.
+
+### 🎯 핵심 가치
+
+- **정신적 노동 경감**: 집안일 계획, 분배, 감독의 인지적 부담 감소
+- **기여도 가시화**: 객관적 포인트/레벨 시스템으로 공정성 확보
+- **지속적 동기 부여**: 다층적 게임화로 반복적인 집안일에 재미 부여
 
 ### 🎮 핵심 컨셉
 
@@ -290,6 +297,41 @@ flutter test
 - [ ] 집안일 댓글 및 사진 첨부
 - [ ] 친구 가구 방문 및 비교
 
+## 📚 프로젝트 문서
+
+ChoreQuest는 체계적인 문서화로 개발과 협업을 지원합니다.
+
+### 비즈니스 문서
+- **[Summary.md](./Summary.md)** - 시장 분석 및 비즈니스 전략 보고서
+- **[PRD.md](./PRD.md)** - 제품 요구사항 정의서 (Product Requirements Document)
+- **[DOMAIN_STRATEGY.md](./DOMAIN_STRATEGY.md)** - 도메인명, 브랜딩, 마케팅 전략
+
+### 기술 문서
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - 기술 아키텍처 설계 (Phase 2 Firebase)
+- **[DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)** - Firebase Firestore 데이터베이스 스키마
+- **[TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md)** - MVP 기술 문서 (Phase 1 Hive)
+- **[DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md)** - 개발자 가이드 및 코딩 컨벤션
+
+### AI 지원
+- **[CLAUDE.md](./CLAUDE.md)** - AI 어시스턴트 컨텍스트 문서
+
+### 개발 진행 상황
+- **[PHASE2_PROGRESS.md](./PHASE2_PROGRESS.md)** ⭐ **Phase 2 작업 진행 상황 및 다음 단계**
+- **[WORKLOG.md](./WORKLOG.md)** - 일자별 작업 로그
+
+### 문서 활용 가이드
+
+| 알고 싶은 내용 | 참고 문서 |
+|---------------|----------|
+| 왜 이 기능이 필요한가? | Summary.md, PRD.md |
+| 무엇을 개발해야 하나? | PRD.md |
+| 어떻게 구현하나? | ARCHITECTURE.md, TECHNICAL_DOCUMENTATION.md |
+| 데이터 구조는? | DATABASE_SCHEMA.md |
+| 개발 환경 설정은? | DEVELOPMENT_GUIDE.md |
+| 도메인/브랜딩 전략은? | DOMAIN_STRATEGY.md |
+| **Phase 2 작업 진행 상황은?** | **PHASE2_PROGRESS.md** ⭐ |
+| 일자별 작업 내역은? | WORKLOG.md |
+
 ## 📄 라이선스
 
 이 프로젝트는 MIT 라이선스로 배포됩니다.
@@ -298,17 +340,26 @@ flutter test
 
 프로젝트에 기여하고 싶으시다면:
 1. Fork the project
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+**기여 전 필독**:
+- [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) - 코딩 스타일, Git 워크플로우
+- [PRD.md](./PRD.md) - 기능 우선순위 확인
 
 ## 📞 문의
 
 프로젝트 관련 문의사항은 이슈를 통해 남겨주세요.
 
+### 팀 연락처 (Phase 2 이후)
+- 이메일: team@chorequest.app
+- 카카오톡 채널: 홈챌린저
+
 ---
 
 <div align="center">
+  <strong>ChoreQuest</strong> - Making Chores Fun!<br>
   Made with ❤️ using Flutter
 </div>
