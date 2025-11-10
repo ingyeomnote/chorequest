@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(dart run build_runner:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter build:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
