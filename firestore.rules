@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // === Helper Functions ===
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isMemberOf(householdId) {
+      return isAuthenticated() &&
+        request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberIds;
+    }
+
+    function isCreatorOf(householdId) {
+      return isAuthenticated() &&
+        request.auth.uid == get(/databases/$(database)/documents/households/$(householdId)).data.creatorId;
+    }
+
+    // === Users Collection ===
+    match /users/{userId} {
+      // 본인 데이터만 읽기/쓰기
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if false; // 사용자 삭제 불가 (Cloud Functions에서만)
+
+      // 통계 서브컬렉션
+      match /stats/{statId} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Cloud Functions에서만 쓰기
+      }
+    }
+
+    // === Households Collection ===
+    match /households/{householdId} {
+      // 멤버만 읽기
+      allow read: if isMemberOf(householdId);
+
+      // 인증된 사용자만 생성 가능
+      allow create: if isAuthenticated();
+
+      // 생성자만 수정/삭제
+      allow update, delete: if isCreatorOf(householdId);
+
+      // 초대 서브컬렉션
+      match /invites/{inviteCode} {
+        allow read: if isAuthenticated();
+        allow create: if isCreatorOf(householdId);
+        allow delete: if isCreatorOf(householdId);
+      }
+    }
+
+    // === Chores Collection ===
+    match /chores/{choreId} {
+      // 가구 멤버만 읽기/쓰기
+      allow read: if isMemberOf(resource.data.householdId);
+      allow create: if isAuthenticated() &&
+                      isMemberOf(request.resource.data.householdId);
+      allow update: if isMemberOf(resource.data.householdId);
+      allow delete: if isMemberOf(resource.data.householdId);
+    }
+
+    // === Templates Collection ===
+    match /templates/{templateId} {
+      // 모두 읽기 가능
+      allow read: if isAuthenticated();
+      // 쓰기는 Admin SDK에서만
+      allow write: if false;
+    }
+
+    // === Invites Collection ===
+    match /invites/{inviteCode} {
+      // 모두 읽기 가능 (코드로 가구 찾기)
+      allow read: if isAuthenticated();
+      // 쓰기는 Cloud Functions에서만
+      allow write: if false;
+    }
+
+    // === Subscriptions Collection ===
+    match /subscriptions/{subscriptionId} {
+      // 본인 구독 정보만 읽기
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // 쓰기는 Cloud Functions에서만 (결제 처리)
+      allow write: if false;
+    }
+  }
+}

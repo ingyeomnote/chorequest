@@ -1,0 +1,29 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 아바타 이미지
+    match /avatars/{userId}/{fileName} {
+      // 모두 읽기 가능
+      allow read: if request.auth != null;
+
+      // 본인만 업로드
+      allow write: if request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024  // 5MB 제한
+                   && request.resource.contentType.matches('image/.*'); // 이미지만
+    }
+
+    // 집안일 첨부 파일
+    match /chores/{choreId}/attachments/{fileName} {
+      allow read, write: if request.auth != null;
+      // TODO: 가구 멤버 권한 체크 (Firestore 참조 필요)
+    }
+
+    // 가구 대표 이미지
+    match /households/{householdId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      // TODO: 생성자 권한 체크
+    }
+  }
+}
