@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter_app/models/chore_model.dart';
-import 'package:flutter_app/services/database_service.dart';
+import '../models/chore_model.dart';
+import '../repositories/chore_repository.dart';
 
+/// ChoreProvider - State management for chores
+///
+/// Manages chore list state and operations using ChoreRepository
+/// Migrated from DatabaseService to ChoreRepository (Phase 2)
 class ChoreProvider extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
+  final ChoreRepository _choreRepository;
   final Uuid _uuid = const Uuid();
 
   List<ChoreModel> _chores = [];
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  String? _currentHouseholdId;
+
+  ChoreProvider({required ChoreRepository choreRepository})
+      : _choreRepository = choreRepository;
 
   List<ChoreModel> get chores => _chores;
   DateTime get selectedDate => _selectedDate;
   bool get isLoading => _isLoading;
+  String? get currentHouseholdId => _currentHouseholdId;
 
-  // 날짜별 집안일 가져오기
+  // ==================== DATE FILTERING ====================
+
+  /// Get chores for a specific date
   List<ChoreModel> getChoresForDate(DateTime date) {
     return _chores.where((chore) {
       return chore.dueDate.year == date.year &&
@@ -24,45 +35,97 @@ class ChoreProvider extends ChangeNotifier {
     }).toList();
   }
 
-  // 선택된 날짜 변경
+  /// Set selected date
   void setSelectedDate(DateTime date) {
     _selectedDate = date;
     notifyListeners();
   }
 
-  // 가구의 모든 집안일 로드
+  // ==================== LOAD OPERATIONS ====================
+
+  /// Load all chores for a household
   Future<void> loadChores(String householdId) async {
     _isLoading = true;
+    _currentHouseholdId = householdId;
     notifyListeners();
 
     try {
-      _chores = _db.getChoresByHousehold(householdId);
+      _chores = await _choreRepository.getChoresByHousehold(householdId);
       _sortChores();
+    } catch (e) {
+      debugPrint('Error loading chores: $e');
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // 사용자별 집안일 로드
-  Future<void> loadUserChores(String userId) async {
-    _chores = _db.getChoresByUser(userId);
-    _sortChores();
+  /// Load chores assigned to a specific user
+  Future<void> loadUserChores(String householdId, String userId) async {
+    _isLoading = true;
+    _currentHouseholdId = householdId;
     notifyListeners();
+
+    try {
+      _chores = await _choreRepository.getChoresByUser(householdId, userId);
+      _sortChores();
+    } catch (e) {
+      debugPrint('Error loading user chores: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  // 날짜 범위로 집안일 로드
+  /// Load chores by date range
   Future<void> loadChoresByDateRange(
     String householdId,
     DateTime startDate,
     DateTime endDate,
   ) async {
-    _chores = _db.getChoresByDateRange(householdId, startDate, endDate);
-    _sortChores();
+    _isLoading = true;
+    _currentHouseholdId = householdId;
     notifyListeners();
+
+    try {
+      _chores = await _choreRepository.getChoresByDateRange(
+        householdId,
+        startDate,
+        endDate,
+      );
+      _sortChores();
+    } catch (e) {
+      debugPrint('Error loading chores by date range: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  // 집안일 생성
+  /// Load pending chores for a household
+  Future<void> loadPendingChores(String householdId) async {
+    _isLoading = true;
+    _currentHouseholdId = householdId;
+    notifyListeners();
+
+    try {
+      _chores = await _choreRepository.getPendingChores(householdId);
+      _sortChores();
+    } catch (e) {
+      debugPrint('Error loading pending chores: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ==================== CRUD OPERATIONS ====================
+
+  /// Create a new chore
   Future<ChoreModel> createChore({
     required String title,
     String? description,
@@ -85,75 +148,124 @@ class ChoreProvider extends ChangeNotifier {
       recurringPattern: recurringPattern,
     );
 
-    await _db.createChore(chore);
-    _chores.add(chore);
-    _sortChores();
-    notifyListeners();
-
-    return chore;
-  }
-
-  // 집안일 업데이트
-  Future<void> updateChore(ChoreModel chore) async {
-    await _db.updateChore(chore);
-    final index = _chores.indexWhere((c) => c.id == chore.id);
-    if (index != -1) {
-      _chores[index] = chore;
+    try {
+      await _choreRepository.createChore(chore);
+      _chores.add(chore);
       _sortChores();
       notifyListeners();
+      return chore;
+    } catch (e) {
+      debugPrint('Error creating chore: $e');
+      rethrow;
     }
   }
 
-  // 집안일 완료 (XP 지급 포함)
-  Future<int> completeChore(String choreId, String userId) async {
-    await _db.completeChoreWithXp(choreId, userId);
-    
-    final chore = _db.getChore(choreId);
-    if (chore != null) {
-      final index = _chores.indexWhere((c) => c.id == choreId);
+  /// Update an existing chore
+  Future<void> updateChore(ChoreModel chore) async {
+    try {
+      await _choreRepository.updateChore(chore);
+      final index = _chores.indexWhere((c) => c.id == chore.id);
       if (index != -1) {
         _chores[index] = chore;
+        _sortChores();
         notifyListeners();
       }
-      return chore.getXpReward();
+    } catch (e) {
+      debugPrint('Error updating chore: $e');
+      rethrow;
     }
-    return 0;
   }
 
-  // 집안일 삭제
+  /// Complete a chore and return XP reward
+  ///
+  /// Note: XP is actually awarded by the Cloud Function trigger
+  /// This method just completes the chore and returns the theoretical XP
+  Future<int> completeChore(String choreId, String userId) async {
+    try {
+      // Find chore first to get XP reward before completion
+      final choreIndex = _chores.indexWhere((c) => c.id == choreId);
+      if (choreIndex == -1) {
+        // Try to fetch from repository
+        final chore = await _choreRepository.getChore(choreId);
+        if (chore == null) {
+          throw Exception('Chore not found: $choreId');
+        }
+        final xpReward = chore.getXpReward();
+
+        // Complete chore
+        await _choreRepository.completeChore(choreId, userId);
+
+        // Refresh to get updated state
+        if (_currentHouseholdId != null) {
+          await loadChores(_currentHouseholdId!);
+        }
+
+        return xpReward;
+      }
+
+      final chore = _chores[choreIndex];
+      final xpReward = chore.getXpReward();
+
+      // Complete chore in repository
+      await _choreRepository.completeChore(choreId, userId);
+
+      // Update local state
+      final updatedChore = await _choreRepository.getChore(choreId);
+      if (updatedChore != null) {
+        _chores[choreIndex] = updatedChore;
+        notifyListeners();
+      }
+
+      return xpReward;
+    } catch (e) {
+      debugPrint('Error completing chore: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a chore
   Future<void> deleteChore(String choreId) async {
-    await _db.deleteChore(choreId);
-    _chores.removeWhere((c) => c.id == choreId);
-    notifyListeners();
+    try {
+      await _choreRepository.deleteChore(choreId);
+      _chores.removeWhere((c) => c.id == choreId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error deleting chore: $e');
+      rethrow;
+    }
   }
 
-  // 집안일 정렬 (마감일순)
+  // ==================== FILTERING & SORTING ====================
+
+  /// Sort chores by due date (ascending)
   void _sortChores() {
     _chores.sort((a, b) => a.dueDate.compareTo(b.dueDate));
   }
 
-  // 오늘의 집안일
+  /// Get today's chores
   List<ChoreModel> getTodayChores() {
     final today = DateTime.now();
     return getChoresForDate(today);
   }
 
-  // 진행 중인 집안일
+  /// Get pending chores (from local cache)
   List<ChoreModel> getPendingChores() {
     return _chores.where((c) => c.status == ChoreStatus.pending).toList();
   }
 
-  // 완료된 집안일
+  /// Get completed chores (from local cache)
   List<ChoreModel> getCompletedChores() {
     return _chores.where((c) => c.status == ChoreStatus.completed).toList();
   }
 
-  // 마감일 지난 집안일
+  /// Get overdue chores (from local cache)
   List<ChoreModel> getOverdueChores() {
     return _chores.where((c) => c.isOverdue()).toList();
   }
 
-  // 통계
+  // ==================== STATISTICS ====================
+
+  /// Get chore statistics
   Map<String, int> getStatistics() {
     return {
       'total': _chores.length,
@@ -163,15 +275,18 @@ class ChoreProvider extends ChangeNotifier {
     };
   }
 
-  // 새로고침
+  // ==================== REFRESH & CLEAR ====================
+
+  /// Refresh chores for current household
   Future<void> refresh(String householdId) async {
     await loadChores(householdId);
   }
 
-  // 초기화
+  /// Clear all local state
   void clear() {
     _chores = [];
     _selectedDate = DateTime.now();
+    _currentHouseholdId = null;
     notifyListeners();
   }
 }
