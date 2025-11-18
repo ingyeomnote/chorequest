@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:hive/hive.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'avatar_model.dart';
 
 part 'user_model.g.dart';
 
@@ -49,6 +50,10 @@ class UserModel extends HiveObject {
   @HiveField(13)
   DateTime? lastActivityAt;
 
+  // Phase 3 추가 필드 - 캐릭터 시스템
+  @HiveField(14)
+  AvatarModel? avatar;
+
   UserModel({
     required this.id,
     required this.name,
@@ -62,9 +67,11 @@ class UserModel extends HiveObject {
     this.longestStreak = 0,
     this.lastLoginAt,
     this.lastActivityAt,
+    AvatarModel? avatar,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
+  })  : avatar = avatar ?? AvatarModel(),
+        createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
   // XP 획득 로직
@@ -142,6 +149,7 @@ class UserModel extends HiveObject {
       'longestStreak': longestStreak,
       'lastLoginAt': lastLoginAt?.toIso8601String(),
       'lastActivityAt': lastActivityAt?.toIso8601String(),
+      'avatar': avatar?.toMap(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -165,6 +173,9 @@ class UserModel extends HiveObject {
       lastActivityAt: map['lastActivityAt'] != null
           ? DateTime.parse(map['lastActivityAt'] as String)
           : null,
+      avatar: map['avatar'] != null
+          ? AvatarModel.fromMap(map['avatar'] as Map<String, dynamic>)
+          : null,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );
@@ -184,6 +195,7 @@ class UserModel extends HiveObject {
       'longestStreak': longestStreak,
       'lastLoginAt': lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
       'lastActivityAt': lastActivityAt != null ? Timestamp.fromDate(lastActivityAt!) : null,
+      'avatar': avatar?.toFirestore(),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -208,6 +220,9 @@ class UserModel extends HiveObject {
       lastActivityAt: data['lastActivityAt'] != null
           ? (data['lastActivityAt'] as Timestamp).toDate()
           : null,
+      avatar: data['avatar'] != null
+          ? AvatarModel.fromFirestore(data['avatar'] as Map<String, dynamic>)
+          : null,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -231,6 +246,9 @@ class UserModel extends HiveObject {
           : null,
       lastActivityAt: data['lastActivityAt'] != null
           ? (data['lastActivityAt'] as Timestamp).toDate()
+          : null,
+      avatar: data['avatar'] != null
+          ? AvatarModel.fromFirestore(data['avatar'] as Map<String, dynamic>)
           : null,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
