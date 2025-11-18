@@ -30,6 +30,16 @@ import 'package:flutter_app/screens/splash_screen.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
 import 'package:flutter_app/screens/home/home_screen.dart';
 
+// Onboarding screens
+import 'package:flutter_app/screens/onboarding/welcome_screen.dart';
+import 'package:flutter_app/screens/onboarding/household_setup_screen.dart';
+import 'package:flutter_app/screens/onboarding/invite_members_screen.dart';
+import 'package:flutter_app/screens/onboarding/role_assignment_screen.dart';
+
+// Gamification screens
+import 'package:flutter_app/screens/gamification/avatar_customization_screen.dart';
+import 'package:flutter_app/screens/gamification/achievement_gallery_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -120,8 +130,12 @@ class MyApp extends StatelessWidget {
             userRepository: userRepository,
           ),
         ),
-        // TODO: Step 4에서 ChoreProvider 업데이트 예정
-        ChangeNotifierProvider(create: (_) => ChoreProvider()),
+        // Step 4: ChoreProvider - Repository 패턴 적용 완료
+        ChangeNotifierProvider(
+          create: (_) => ChoreProvider(
+            choreRepository: choreRepository,
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'ChoreQuest',
@@ -163,8 +177,32 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         home: const SplashScreen(),
         routes: {
+          // Auth
           '/login': (context) => const LoginScreen(),
+
+          // Main
           '/home': (context) => const HomeScreen(),
+
+          // Onboarding
+          '/onboarding/welcome': (context) => const WelcomeScreen(),
+          '/onboarding/household-setup': (context) => const HouseholdSetupScreen(),
+          '/onboarding/invite-members': (context) {
+            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+            return InviteMembersScreen(
+              householdId: args?['householdId'] ?? '',
+              householdName: args?['householdName'] ?? '',
+            );
+          },
+          '/onboarding/role-assignment': (context) {
+            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+            return RoleAssignmentScreen(
+              householdId: args?['householdId'] ?? '',
+            );
+          },
+
+          // Gamification
+          '/gamification/avatar': (context) => const AvatarCustomizationScreen(),
+          '/gamification/achievements': (context) => const AchievementGalleryScreen(),
         },
       ),
     );

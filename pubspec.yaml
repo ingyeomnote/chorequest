@@ -65,6 +65,7 @@ dependencies:
 
   # Utilities
   connectivity_plus: ^6.1.2  # 네트워크 상태 확인
+  share_plus: ^10.1.4        # 공유 기능 (초대 링크)
 
 dev_dependencies:
   flutter_test:
