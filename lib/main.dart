@@ -14,6 +14,7 @@ import 'package:flutter_app/models/chore_model.dart';
 // Services
 import 'package:flutter_app/services/firebase_auth_service.dart';
 import 'package:flutter_app/services/firestore_service.dart';
+import 'package:flutter_app/services/notification_service.dart';
 
 // Repositories
 import 'package:flutter_app/repositories/user_repository.dart';
@@ -54,6 +55,7 @@ void main() async {
   // Services 초기화
   final firestoreService = FirestoreService();
   final authService = FirebaseAuthService();
+  await NotificationService().initialize();
 
   // Repositories 초기화
   final userRepository = UserRepository(
@@ -120,8 +122,12 @@ class MyApp extends StatelessWidget {
             userRepository: userRepository,
           ),
         ),
-        // TODO: Step 4에서 ChoreProvider 업데이트 예정
-        ChangeNotifierProvider(create: (_) => ChoreProvider()),
+        // Step 4: ChoreProvider - Repository 주입 완료
+        ChangeNotifierProvider(
+          create: (_) => ChoreProvider(
+            choreRepository: choreRepository,
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'ChoreQuest',
