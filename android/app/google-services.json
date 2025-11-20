@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "811969441336",
+    "project_id": "chorequest-cd64a",
+    "storage_bucket": "chorequest-cd64a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:811969441336:android:bf8374c719dda959b780cd",
+        "android_client_info": {
+          "package_name": "com.example.flutter_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA66AwEG0AMulCqMAfmiYXE7mdE4K3DXls"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

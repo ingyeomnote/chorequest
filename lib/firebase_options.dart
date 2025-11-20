@@ -25,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -47,29 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDemoKeyForWeb-ReplaceWithRealKey',
-    appId: '1:123456789:web:abcdef123456',
-    messagingSenderId: '123456789',
-    projectId: 'chorequest-prod',
-    authDomain: 'chorequest-prod.firebaseapp.com',
-    storageBucket: 'chorequest-prod.appspot.com',
-    measurementId: 'G-MEASUREMENT',
+    apiKey: 'AIzaSyDYHFB-9kvrdGpmA66mAs0UJ5rioXRB-kw',
+    appId: '1:811969441336:web:928a27e90485e4e8b780cd',
+    messagingSenderId: '811969441336',
+    projectId: 'chorequest-cd64a',
+    authDomain: 'chorequest-cd64a.firebaseapp.com',
+    storageBucket: 'chorequest-cd64a.firebasestorage.app',
+    measurementId: 'G-WQC1B23JGK',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDemoKeyForAndroid-ReplaceWithRealKey',
-    appId: '1:123456789:android:abcdef123456',
-    messagingSenderId: '123456789',
-    projectId: 'chorequest-prod',
-    storageBucket: 'chorequest-prod.appspot.com',
+    apiKey: 'AIzaSyA66AwEG0AMulCqMAfmiYXE7mdE4K3DXls',
+    appId: '1:811969441336:android:bf8374c719dda959b780cd',
+    messagingSenderId: '811969441336',
+    projectId: 'chorequest-cd64a',
+    storageBucket: 'chorequest-cd64a.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDemoKeyForIOS-ReplaceWithRealKey',
-    appId: '1:123456789:ios:abcdef123456',
-    messagingSenderId: '123456789',
-    projectId: 'chorequest-prod',
-    storageBucket: 'chorequest-prod.appspot.com',
-    iosBundleId: 'com.chorequest.app',
+    apiKey: 'AIzaSyD7ED6i8H22kNLsLVns1-Y5lQK2V5uVVIo',
+    appId: '1:811969441336:ios:3ee4120db4d1300eb780cd',
+    messagingSenderId: '811969441336',
+    projectId: 'chorequest-cd64a',
+    storageBucket: 'chorequest-cd64a.firebasestorage.app',
+    iosBundleId: 'com.example.flutterApp',
   );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyD7ED6i8H22kNLsLVns1-Y5lQK2V5uVVIo',
+    appId: '1:811969441336:ios:3ee4120db4d1300eb780cd',
+    messagingSenderId: '811969441336',
+    projectId: 'chorequest-cd64a',
+    storageBucket: 'chorequest-cd64a.firebasestorage.app',
+    iosBundleId: 'com.example.flutterApp',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDYHFB-9kvrdGpmA66mAs0UJ5rioXRB-kw',
+    appId: '1:811969441336:web:2ff6f3b36ad9a3c0b780cd',
+    messagingSenderId: '811969441336',
+    projectId: 'chorequest-cd64a',
+    authDomain: 'chorequest-cd64a.firebaseapp.com',
+    storageBucket: 'chorequest-cd64a.firebasestorage.app',
+    measurementId: 'G-MEJCRM5Y18',
+  );
+
 }
