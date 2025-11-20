@@ -1,123 +1,33 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:cloud_functions/cloud_functions.dart';
 import '../models/chore_model.dart';
 import '../models/user_model.dart';
 import '../utils/logger.dart';
 
 /// 카카오톡 메시지 API 서비스
-/// 카카오톡으로 집안일 알림, 완료 확인 등을 전송
+/// 보안을 위해 클라이언트에서 직접 카카오 API를 호출하지 않고,
+/// Firebase Cloud Functions를 통해 안전하게 전송합니다.
 class KakaoMessageService {
   static final KakaoMessageService _instance = KakaoMessageService._internal();
   factory KakaoMessageService() => _instance;
   KakaoMessageService._internal();
 
-  // 카카오 REST API 키 (환경 변수 또는 Firebase Remote Config에서 로드)
-  String? _restApiKey;
-  String? _accessToken;
-
-  // Kakao Message API endpoint
-  static const String _sendMeUrl = 'https://kapi.kakao.com/v2/api/talk/memo/default/send';
-  static const String _sendFriendUrl = 'https://kapi.kakao.com/v1/api/talk/friends/message/default/send';
-
-  // API 키 및 액세스 토큰 설정
-  void setCredentials({required String restApiKey, required String accessToken}) {
-    _restApiKey = restApiKey;
-    _accessToken = accessToken;
-  }
-
-  // 나에게 메시지 전송 (테스트용)
-  Future<bool> sendToMe(String message) async {
-    if (_accessToken == null) {
-      logger.e('Kakao access token not set');
-      return false;
-    }
-
-    try {
-      final templateObject = {
-        'object_type': 'text',
-        'text': message,
-        'link': {
-          'web_url': 'https://chorequest.app',
-          'mobile_web_url': 'https://chorequest.app',
-        },
-      };
-
-      final response = await http.post(
-        Uri.parse(_sendMeUrl),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'template_object': json.encode(templateObject),
-        },
-      );
-
-      if (response.statusCode == 200) {
-        logger.i('Kakao message sent successfully');
-        return true;
-      } else {
-        logger.e('Kakao API error: ${response.statusCode} ${response.body}');
-        return false;
-      }
-    } catch (e) {
-      logger.e('Failed to send Kakao message: $e');
-      return false;
-    }
-  }
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   // 오늘의 할 일 전송
   Future<bool> sendDailyChores({
     required UserModel user,
     required List<ChoreModel> todayChores,
   }) async {
-    if (_accessToken == null) {
-      throw Exception('Kakao access token not set');
-    }
-
     try {
-      final choreList = todayChores.take(5).map((chore) {
-        final difficultyIcon = _getDifficultyIcon(chore.difficulty);
-        return '$difficultyIcon ${chore.title}';
-      }).join('\n');
+      // Cloud Function 호출
+      final result = await _functions.httpsCallable('sendDailyChores').call({
+        'userId': user.id,
+        'choreIds': todayChores.map((c) => c.id).toList(),
+      });
 
-      final message = '''
-🏠 ChoreQuest - 오늘의 할 일
-
-안녕하세요, ${user.name}님!
-오늘 완료해야 할 집안일이 ${todayChores.length}개 있어요.
-
-$choreList
-
-${todayChores.length > 5 ? '\n외 ${todayChores.length - 5}개...' : ''}
-
-💪 오늘도 화이팅!
-      ''';
-
-      final templateObject = {
-        'object_type': 'text',
-        'text': message,
-        'link': {
-          'web_url': 'https://chorequest.app/dashboard',
-          'mobile_web_url': 'https://chorequest.app/dashboard',
-        },
-        'button_title': '앱에서 보기',
-      };
-
-      final response = await http.post(
-        Uri.parse(_sendMeUrl),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'template_object': json.encode(templateObject),
-        },
-      );
-
-      return response.statusCode == 200;
+      return result.data['success'] ?? false;
     } catch (e) {
-      logger.e('Failed to send daily chores: $e');
+      logger.e('Failed to send daily chores via Cloud Functions: $e');
       return false;
     }
   }
@@ -128,45 +38,14 @@ ${todayChores.length > 5 ? '\n외 ${todayChores.length - 5}개...' : ''}
     required ChoreModel chore,
     required int hoursRemaining,
   }) async {
-    if (_accessToken == null) {
-      throw Exception('Kakao access token not set');
-    }
-
     try {
-      final message = '''
-⏰ 마감 임박!
+      final result = await _functions.httpsCallable('sendDueSoonReminder').call({
+        'userId': user.id,
+        'choreId': chore.id,
+        'hoursRemaining': hoursRemaining,
+      });
 
-${user.name}님, 집안일 마감이 ${hoursRemaining}시간 남았어요!
-
-📋 ${chore.title}
-⏱ 예상 시간: ${chore.estimatedMinutes ?? 30}분
-🏆 보상: +${_getXPForDifficulty(chore.difficulty)} XP
-
-지금 바로 완료하고 XP를 받으세요!
-      ''';
-
-      final templateObject = {
-        'object_type': 'text',
-        'text': message,
-        'link': {
-          'web_url': 'https://chorequest.app/chores/${chore.id}',
-          'mobile_web_url': 'https://chorequest.app/chores/${chore.id}',
-        },
-        'button_title': '완료하기',
-      };
-
-      final response = await http.post(
-        Uri.parse(_sendMeUrl),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'template_object': json.encode(templateObject),
-        },
-      );
-
-      return response.statusCode == 200;
+      return result.data['success'] ?? false;
     } catch (e) {
       logger.e('Failed to send due soon reminder: $e');
       return false;
@@ -179,41 +58,14 @@ ${user.name}님, 집안일 마감이 ${hoursRemaining}시간 남았어요!
     required String choreTitle,
     String? customMessage,
   }) async {
-    if (_accessToken == null) {
-      throw Exception('Kakao access token not set');
-    }
-
     try {
-      final message = customMessage ??
-          '''
-👏 칭찬이 도착했어요!
+      final result = await _functions.httpsCallable('sendPraiseMessage').call({
+        'recipientName': recipientName,
+        'choreTitle': choreTitle,
+        'customMessage': customMessage,
+      });
 
-"${choreTitle}" 완료해주셔서 감사해요, ${recipientName}님!
-
-가족 모두가 ${recipientName}님의 노력을 응원합니다! 💕
-      ''';
-
-      final templateObject = {
-        'object_type': 'text',
-        'text': message,
-        'link': {
-          'web_url': 'https://chorequest.app',
-          'mobile_web_url': 'https://chorequest.app',
-        },
-      };
-
-      final response = await http.post(
-        Uri.parse(_sendMeUrl),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'template_object': json.encode(templateObject),
-        },
-      );
-
-      return response.statusCode == 200;
+      return result.data['success'] ?? false;
     } catch (e) {
       logger.e('Failed to send praise message: $e');
       return false;
@@ -225,45 +77,13 @@ ${user.name}님, 집안일 마감이 ${hoursRemaining}시간 남았어요!
     required UserModel user,
     required int currentStreak,
   }) async {
-    if (_accessToken == null) {
-      throw Exception('Kakao access token not set');
-    }
-
     try {
-      final message = '''
-🔥 스트릭 위험!
+      final result = await _functions.httpsCallable('sendStreakAtRiskWarning').call({
+        'userId': user.id,
+        'currentStreak': currentStreak,
+      });
 
-${user.name}님, 오늘 집안일을 완료하지 않으면
-${currentStreak}일 연속 기록이 끊깁니다!
-
-💪 지금 바로 간단한 집안일 하나만 완료하고
-스트릭을 지켜보세요!
-
-최고 기록: ${user.longestStreak}일
-      ''';
-
-      final templateObject = {
-        'object_type': 'text',
-        'text': message,
-        'link': {
-          'web_url': 'https://chorequest.app/dashboard',
-          'mobile_web_url': 'https://chorequest.app/dashboard',
-        },
-        'button_title': '스트릭 지키기',
-      };
-
-      final response = await http.post(
-        Uri.parse(_sendMeUrl),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'template_object': json.encode(templateObject),
-        },
-      );
-
-      return response.statusCode == 200;
+      return result.data['success'] ?? false;
     } catch (e) {
       logger.e('Failed to send streak warning: $e');
       return false;
@@ -276,48 +96,14 @@ ${currentStreak}일 연속 기록이 끊깁니다!
     required int newLevel,
     required List<String> unlockedItems,
   }) async {
-    if (_accessToken == null) {
-      throw Exception('Kakao access token not set');
-    }
-
     try {
-      final itemsList = unlockedItems.take(3).join('\n');
+      final result = await _functions.httpsCallable('sendLevelUpCongrats').call({
+        'userId': user.id,
+        'newLevel': newLevel,
+        'unlockedItems': unlockedItems,
+      });
 
-      final message = '''
-🎉 레벨 업!
-
-축하합니다, ${user.name}님!
-레벨 $newLevel 달성!
-
-🔓 새로운 아이템 해금:
-$itemsList
-${unlockedItems.length > 3 ? '외 ${unlockedItems.length - 3}개...' : ''}
-
-계속해서 성장하는 ${user.name}님 멋져요! 💪
-      ''';
-
-      final templateObject = {
-        'object_type': 'text',
-        'text': message,
-        'link': {
-          'web_url': 'https://chorequest.app/avatar',
-          'mobile_web_url': 'https://chorequest.app/avatar',
-        },
-        'button_title': '캐릭터 꾸미기',
-      };
-
-      final response = await http.post(
-        Uri.parse(_sendMeUrl),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'template_object': json.encode(templateObject),
-        },
-      );
-
-      return response.statusCode == 200;
+      return result.data['success'] ?? false;
     } catch (e) {
       logger.e('Failed to send level up message: $e');
       return false;
@@ -329,51 +115,21 @@ ${unlockedItems.length > 3 ? '외 ${unlockedItems.length - 3}개...' : ''}
     required String userName,
     required String message,
   }) async {
-    if (_accessToken == null) {
-      throw Exception('Kakao access token not set');
-    }
-
     try {
-      final fullMessage = '''
-⚠️ 집안일 불균형 감지
+      final result = await _functions.httpsCallable('sendImbalanceWarning').call({
+        'userName': userName,
+        'message': message,
+      });
 
-$message
-
-ChoreQuest가 공정한 분담을 위한 제안을 준비했어요.
-앱에서 확인해보세요!
-      ''';
-
-      final templateObject = {
-        'object_type': 'text',
-        'text': fullMessage,
-        'link': {
-          'web_url': 'https://chorequest.app/conflict',
-          'mobile_web_url': 'https://chorequest.app/conflict',
-        },
-        'button_title': '제안 보기',
-      };
-
-      final response = await http.post(
-        Uri.parse(_sendMeUrl),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'template_object': json.encode(templateObject),
-        },
-      );
-
-      return response.statusCode == 200;
+      return result.data['success'] ?? false;
     } catch (e) {
       logger.e('Failed to send imbalance warning: $e');
       return false;
     }
   }
 
-  // Helper methods
-
-  String _getDifficultyIcon(ChoreDifficulty difficulty) {
+  // Helper methods (UI용)
+  String getDifficultyIcon(ChoreDifficulty difficulty) {
     switch (difficulty) {
       case ChoreDifficulty.easy:
         return '⭐';
@@ -381,17 +137,6 @@ ChoreQuest가 공정한 분담을 위한 제안을 준비했어요.
         return '⭐⭐';
       case ChoreDifficulty.hard:
         return '⭐⭐⭐';
-    }
-  }
-
-  int _getXPForDifficulty(ChoreDifficulty difficulty) {
-    switch (difficulty) {
-      case ChoreDifficulty.easy:
-        return 10;
-      case ChoreDifficulty.medium:
-        return 25;
-      case ChoreDifficulty.hard:
-        return 50;
     }
   }
 }
