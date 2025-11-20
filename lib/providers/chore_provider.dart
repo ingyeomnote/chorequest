@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_app/models/chore_model.dart';
-import 'package:flutter_app/services/database_service.dart';
+import 'package:flutter_app/repositories/chore_repository.dart';
 
 class ChoreProvider extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
+  final ChoreRepository _choreRepository;
   final Uuid _uuid = const Uuid();
+
+  ChoreProvider({required ChoreRepository choreRepository})
+      : _choreRepository = choreRepository;
 
   List<ChoreModel> _chores = [];
   DateTime _selectedDate = DateTime.now();
@@ -36,7 +39,7 @@ class ChoreProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _chores = _db.getChoresByHousehold(householdId);
+      _chores = await _choreRepository.getChoresByHousehold(householdId);
       _sortChores();
     } finally {
       _isLoading = false;
@@ -45,19 +48,8 @@ class ChoreProvider extends ChangeNotifier {
   }
 
   // 사용자별 집안일 로드
-  Future<void> loadUserChores(String userId) async {
-    _chores = _db.getChoresByUser(userId);
-    _sortChores();
-    notifyListeners();
-  }
-
-  // 날짜 범위로 집안일 로드
-  Future<void> loadChoresByDateRange(
-    String householdId,
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    _chores = _db.getChoresByDateRange(householdId, startDate, endDate);
+  Future<void> loadUserChores(String householdId, String userId) async {
+    _chores = await _choreRepository.getChoresByUser(householdId, userId);
     _sortChores();
     notifyListeners();
   }
@@ -85,7 +77,7 @@ class ChoreProvider extends ChangeNotifier {
       recurringPattern: recurringPattern,
     );
 
-    await _db.createChore(chore);
+    await _choreRepository.createChore(chore);
     _chores.add(chore);
     _sortChores();
     notifyListeners();
@@ -95,7 +87,7 @@ class ChoreProvider extends ChangeNotifier {
 
   // 집안일 업데이트
   Future<void> updateChore(ChoreModel chore) async {
-    await _db.updateChore(chore);
+    await _choreRepository.updateChore(chore);
     final index = _chores.indexWhere((c) => c.id == chore.id);
     if (index != -1) {
       _chores[index] = chore;
@@ -105,24 +97,23 @@ class ChoreProvider extends ChangeNotifier {
   }
 
   // 집안일 완료 (XP 지급 포함)
-  Future<int> completeChore(String choreId, String userId) async {
-    await _db.completeChoreWithXp(choreId, userId);
+  Future<void> completeChore(String choreId, String userId) async {
+    await _choreRepository.completeChore(choreId, userId);
     
-    final chore = _db.getChore(choreId);
-    if (chore != null) {
+    // Repository에서 최신 상태를 다시 가져오거나 로컬 상태 업데이트
+    final updatedChore = await _choreRepository.getChore(choreId);
+    if (updatedChore != null) {
       final index = _chores.indexWhere((c) => c.id == choreId);
       if (index != -1) {
-        _chores[index] = chore;
+        _chores[index] = updatedChore;
         notifyListeners();
       }
-      return chore.getXpReward();
     }
-    return 0;
   }
 
   // 집안일 삭제
   Future<void> deleteChore(String choreId) async {
-    await _db.deleteChore(choreId);
+    await _choreRepository.deleteChore(choreId);
     _chores.removeWhere((c) => c.id == choreId);
     notifyListeners();
   }
