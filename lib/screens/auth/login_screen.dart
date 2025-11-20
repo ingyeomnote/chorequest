@@ -141,6 +141,35 @@ class _LoginScreenState extends State<LoginScreen> {
                         : const Text('로그인', style: TextStyle(fontSize: 16)),
                   ),
                   const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : () async {
+                      setState(() => _isLoading = true);
+                      try {
+                        final authProvider = context.read<AuthProvider>();
+                        await authProvider.signInWithGoogle();
+                        if (!mounted) return;
+                        Navigator.of(context).pushReplacementNamed('/home');
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Google 로그인 실패: $e')),
+                        );
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isLoading = false);
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.login), // Replace with Google icon asset if available
+                    label: const Text('Google로 계속하기'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   OutlinedButton(
                     onPressed: () {
                       Navigator.of(context).push(
