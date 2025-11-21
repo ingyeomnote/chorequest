@@ -174,6 +174,67 @@ class FirebaseAuthService {
     }
   }
 
+  /// Sign in anonymously (for guest access)
+  Future<fb_auth.User> signInAnonymously() async {
+    try {
+      _log.info('Signing in anonymously');
+
+      final credential = await _auth.signInAnonymously();
+
+      if (credential.user == null) {
+        throw Exception('Anonymous sign in failed: no user returned');
+      }
+
+      _log.info('Anonymous sign in successful: ${credential.user!.uid}');
+      return credential.user!;
+    } on fb_auth.FirebaseAuthException catch (e) {
+      _log.error('Anonymous sign in failed', e);
+      throw _handleAuthException(e);
+    } catch (e) {
+      _log.error('Unexpected error during anonymous sign in', e);
+      rethrow;
+    }
+  }
+
+  /// Check if current user is anonymous
+  bool get isAnonymous => currentUser?.isAnonymous ?? false;
+
+  /// Link anonymous account with email/password
+  Future<fb_auth.User> linkWithEmail(String email, String password) async {
+    try {
+      final user = currentUser;
+      if (user == null) {
+        throw Exception('No user signed in');
+      }
+
+      if (!user.isAnonymous) {
+        throw Exception('User is not anonymous');
+      }
+
+      _log.info('Linking anonymous account with email: $email');
+
+      final credential = fb_auth.EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+
+      final userCredential = await user.linkWithCredential(credential);
+
+      if (userCredential.user == null) {
+        throw Exception('Account linking failed: no user returned');
+      }
+
+      _log.info('Account linked successfully');
+      return userCredential.user!;
+    } on fb_auth.FirebaseAuthException catch (e) {
+      _log.error('Account linking failed', e);
+      throw _handleAuthException(e);
+    } catch (e) {
+      _log.error('Unexpected error during account linking', e);
+      rethrow;
+    }
+  }
+
   /// Delete user account
   Future<void> deleteAccount() async {
     try {

@@ -186,6 +186,42 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: const Text('회원가입', style: TextStyle(fontSize: 16)),
                   ),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : () async {
+                      setState(() => _isLoading = true);
+                      try {
+                        final authProvider = context.read<AuthProvider>();
+                        await authProvider.signInAnonymously();
+                        if (!mounted) return;
+                        Navigator.of(context).pushReplacementNamed('/home');
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('익명 로그인 실패: $e')),
+                        );
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isLoading = false);
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.person_outline),
+                    label: const Text('게스트로 둘러보기'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '게스트 모드는 회원가입 없이 앱을 체험할 수 있습니다.\n나중에 계정을 만들어 데이터를 저장할 수 있습니다.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                  ),
                 ],
               ),
             ),

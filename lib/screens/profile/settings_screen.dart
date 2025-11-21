@@ -18,6 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
+    final isAnonymous = authProvider.isAnonymous;
 
     return Scaffold(
       appBar: AppBar(
@@ -34,11 +35,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '계정 정보',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '계정 정보',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        if (isAnonymous)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.person_outline,
+                                  size: 14,
+                                  color: Colors.orange.shade700,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '게스트',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.orange.shade700,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -46,14 +82,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         CircleAvatar(
                           radius: 30,
                           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                          child: Text(
-                            user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
+                          child: isAnonymous
+                              ? Icon(
+                                  Icons.person_outline,
+                                  size: 32,
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                )
+                              : Text(
+                                  user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -61,14 +103,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                user?.name ?? '사용자',
+                                isAnonymous ? '게스트 사용자' : (user?.name ?? '사용자'),
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                user?.email ?? '',
+                                isAnonymous ? '로그인하지 않은 상태' : (user?.email ?? ''),
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                     ),
@@ -78,6 +120,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
+                    if (isAnonymous) ...[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Text(
+                        '게스트 모드로 사용 중입니다. 계정을 만들면 데이터를 영구적으로 저장할 수 있습니다.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.orange.shade700,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showLinkAccountDialog(context),
+                          icon: const Icon(Icons.person_add),
+                          label: const Text('계정 만들기'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -292,6 +358,165 @@ ChoreQuest는 가족 구성원들이 집안일을 관리하고 게임화된 경�
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('닫기'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLinkAccountDialog(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('계정 만들기'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '게스트 계정을 정식 계정으로 전환합니다.\n현재까지의 모든 데이터가 보존됩니다.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: '이름',
+                    hintText: '홍길동',
+                    prefixIcon: Icon(Icons.person),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '이름을 입력해주세요';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: '이메일',
+                    hintText: 'example@email.com',
+                    prefixIcon: Icon(Icons.email),
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '이메일을 입력해주세요';
+                    }
+                    if (!value.contains('@')) {
+                      return '올바른 이메일 형식이 아닙니다';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  decoration: const InputDecoration(
+                    labelText: '비밀번호',
+                    hintText: '6자 이상',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '비밀번호를 입력해주세요';
+                    }
+                    if (value.length < 6) {
+                      return '비밀번호는 최소 6자 이상이어야 합니다';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: confirmPasswordController,
+                  decoration: const InputDecoration(
+                    labelText: '비밀번호 확인',
+                    hintText: '비밀번호를 다시 입력하세요',
+                    prefixIcon: Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '비밀번호를 다시 입력해주세요';
+                    }
+                    if (value != passwordController.text) {
+                      return '비밀번호가 일치하지 않습니다';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+
+              Navigator.pop(context); // Close dialog
+
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+
+              try {
+                final authProvider = context.read<AuthProvider>();
+                await authProvider.linkAnonymousAccountWithEmail(
+                  email: emailController.text.trim(),
+                  password: passwordController.text,
+                  name: nameController.text.trim(),
+                );
+
+                if (!context.mounted) return;
+                Navigator.pop(context); // Close loading
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('계정이 성공적으로 생성되었습니다! 🎉'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                Navigator.pop(context); // Close loading
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('계정 생성 실패: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('계정 만들기'),
           ),
         ],
       ),

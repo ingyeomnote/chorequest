@@ -179,6 +179,100 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Sign in anonymously (guest mode)
+  Future<void> signInAnonymously() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      _log.info('Signing in anonymously');
+
+      try {
+        // Try Firebase anonymous authentication first
+        await _authService.signInAnonymously();
+        _log.info('Anonymous sign in successful via Firebase');
+      } catch (firebaseError) {
+        _log.warning('Firebase anonymous auth failed, using local guest mode: $firebaseError');
+        
+        // Fallback: Create local guest user
+        final guestUser = UserModel(
+          id: 'guest_${DateTime.now().millisecondsSinceEpoch}',
+          name: '게스트 사용자',
+          email: 'guest@local',
+        );
+        
+        // Save to local cache only
+        await _userRepository.createUser(guestUser);
+        _currentUser = guestUser;
+        
+        _log.info('Local guest mode created successfully');
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _log.error('Anonymous sign in failed', e);
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Check if current user is anonymous (guest)
+  bool get isAnonymous {
+    // Check Firebase anonymous user
+    if (_authService.isAnonymous) return true;
+    
+    // Check local guest user
+    if (_currentUser != null && _currentUser!.id.startsWith('guest_')) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// Link anonymous account with email/password
+  Future<void> linkAnonymousAccountWithEmail({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    if (_currentUser == null || !isAnonymous) {
+      throw Exception('Not an anonymous user');
+    }
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      _log.info('Linking anonymous account with email: $email');
+
+      // Link Firebase Auth account
+      await _authService.linkWithEmail(email, password);
+
+      // Update display name
+      await _authService.updateDisplayName(name);
+
+      // Update user in Firestore
+      final updatedUser = _currentUser!.copyWith(
+        name: name,
+        email: email,
+      );
+      await _userRepository.updateUser(updatedUser);
+
+      _currentUser = updatedUser;
+      _isLoading = false;
+      notifyListeners();
+
+      _log.info('Account linked successfully');
+    } catch (e) {
+      _log.error('Failed to link account', e);
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   /// Sign out
   Future<void> signOut() async {
     try {

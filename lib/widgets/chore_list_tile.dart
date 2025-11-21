@@ -50,7 +50,14 @@ class ChoreListTile extends StatelessWidget {
     final choreProvider = context.read<ChoreProvider>();
     final householdProvider = context.read<HouseholdProvider>();
 
-    final xpReward = await choreProvider.completeChore(
+    // Calculate XP reward based on difficulty
+    final xpReward = chore.difficulty == ChoreDifficulty.easy
+        ? 10
+        : chore.difficulty == ChoreDifficulty.medium
+            ? 20
+            : 30;
+
+    await choreProvider.completeChore(
       chore.id,
       authProvider.currentUser!.id,
     );
